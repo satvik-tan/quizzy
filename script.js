@@ -9,6 +9,22 @@ const questions = [
       options: ["3", "4", "22", "5"],
       answer: "4",
     },
+    {
+      question: "What is the largest planet in our solar system?",
+      options: ["Earth", "Mars", "Jupiter", "Saturn"],
+      answer: "Jupiter",
+    },
+    {
+      question: "Which element has the chemical symbol 'O'?",
+      options: ["Gold", "Oxygen", "Silver", "Hydrogen"],
+      answer: "Oxygen",
+    },
+    {
+      question: "Who wrote 'Romeo and Juliet'?",
+      options: ["Mark Twain", "William Shakespeare", "Charles Dickens", "Jane Austen"],
+      answer: "William Shakespeare",
+    },
+
   ];
   
   let current = 0;
