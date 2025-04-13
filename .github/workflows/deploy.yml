@@ -1,4 +1,4 @@
-name: Deploy Node.js to Vercel
+name: Deploy to Vercel
 
 on:
   push:
@@ -11,51 +11,23 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Detect Package Manager
-        id: detect-package-manager
-        run: |
-          if [ -f "yarn.lock" ]; then
-            echo "manager=yarn" >> $GITHUB_OUTPUT
-          elif [ -f "pnpm-lock.yaml" ]; then
-            echo "manager=pnpm" >> $GITHUB_OUTPUT
-          else
-            echo "manager=npm" >> $GITHUB_OUTPUT
-          fi
+        uses: actions/checkout@v3
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v3
         with:
-          node-version: '18' # Choose your node version
-          cache: ${{ steps.detect-package-manager.outputs.manager }}
+          node-version: '18' # Or your preferred Node.js version
+          cache: 'npm'
 
-      - name: Install Dependencies
-        run: |
-          if [ "${{ steps.detect-package-manager.outputs.manager }}" == "yarn" ]; then
-            yarn install --frozen-lockfile
-          elif [ "${{ steps.detect-package-manager.outputs.manager }}" == "pnpm" ]; then
-            pnpm install --frozen-lockfile
-          else
-            npm ci
-          fi
+      - name: Install dependencies
+        run: npm install
 
-      - name: Build Project
-        run: |
-          if [ "${{ steps.detect-package-manager.outputs.manager }}" == "yarn" ]; then
-            yarn build
-          elif [ "${{ steps.detect-package-manager.outputs.manager }}" == "pnpm" ]; then
-            pnpm build
-          else
-            npm run build
-          fi
+      - name: Build
+        run: npm run build # Or your specific build command, e.g., `npm run build:prod`
         env:
-          # Add any build-time environment variables here
-          # For example:
-          # NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
+          CI: false
 
       - name: Deploy to Vercel
         uses: amondnet/vercel-action@v20
@@ -63,24 +35,15 @@ jobs:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
           vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
           vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-          # Optional:
-          # working-directory: ./my-subdir # If your project is in a subdirectory
-          # vercel-args: --prod # Optional: pass any vercel arguments here
+          working-directory: ./ # Adjust if your project is in a subdirectory
+          vercel-args: '--prod' # or any other vercel deployment args
 
-      - name: Slack Notification (Success)
-        if: success()
-        uses: rtCamp/action-slack-notify@v2
-        env:
-          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
-          SLACK_COLOR: '#2eb886' # Green
-          SLACK_TITLE: "Deployment Successful"
-          SLACK_MESSAGE: "Deployment to Vercel successful!"
-
-      - name: Slack Notification (Failure)
+      - name: Send Slack Notification (Optional)
         if: failure()
         uses: rtCamp/action-slack-notify@v2
         env:
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
-          SLACK_COLOR: '#e01e5a' # Red
-          SLACK_TITLE: "Deployment Failed"
-          SLACK_MESSAGE: "Deployment to Vercel failed. Check the logs."
+          SLACK_COLOR: danger
+          SLACK_TITLE: "Vercel Deployment Failed"
+          SLACK_MESSAGE: "Deployment to Vercel failed. Check the workflow logs for details."
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
