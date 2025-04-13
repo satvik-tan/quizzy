@@ -9,6 +9,11 @@ const questions = [
       options: ["3", "4", "22", "5"],
       answer: "4",
     },
+    {
+      question: "What is the capital of India",
+      options: ["Delhi", "Chandigarh", "Bombay", "Bangalore"],
+      answer: "1", 
+    }
   ];
   
   let current = 0;
