@@ -1,12 +1,12 @@
-name: Deploy Node App to Vercel
+name: Deploy Node.js App to Vercel
 
 on:
   push:
     branches:
-      - main  # Adjust to your main branch name
+      - main # Change to your main branch
   pull_request:
     branches:
-      - main  # Adjust to your main branch name
+      - main # Change to your main branch
 
 jobs:
   deploy:
@@ -14,45 +14,49 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
+      - name: Detect Node.js version
+        uses: actions/setup-node@v4
         with:
-          node-version: '18'  # Or your preferred Node.js version
-          cache: 'npm'
+          node-version: 'lts/*' # Use the latest LTS version
 
-      - name: Install Dependencies
-        run: npm ci
+      - name: Install dependencies
+        id: install-dependencies
+        uses: bahmutov/npm-install@v1
+        with:
+          install-command: npm install
+          update-snapshots: false  # Prevent snapshot updates for clean builds
+          working-directory: ./ # Change if your package.json is in a subdirectory
 
-      - name: Build Application
-        run: npm run build  # Or your specific build command
+      - name: Build application
+        id: build-application
+        run: |
+          npm run build # Or your specific build command (e.g., npm run build, yarn build)
         env:
-          CI: false # to prevent build failing on warnings if create-react-app
-          NODE_ENV: production # useful for some libraries
+          NODE_ENV: production
+          # Add any other environment variables needed for your build
 
       - name: Deploy to Vercel
-        uses: amondnet/vercel-action@v20
+        id: vercel-deploy
+        uses: vercel/vercel-action@v0.15.0
         with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }} # Vercel API token
-          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }} # Your Vercel organization ID
-          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }} # Your Vercel project ID
-          production: ${{ github.ref == 'refs/heads/main' }} # Deploy to production only on pushes to main
+          vercel-token: ${{ secrets.VERCEL_TOKEN }} # Your Vercel token stored as a GitHub secret
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }} # Your Vercel Org ID stored as a GitHub secret
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }} # Your Vercel Project ID stored as a GitHub secret
+          github-comment: false
+          scope: ${{ secrets.VERCEL_ORG_ID }} # Optional: set the scope
 
-      - name: Slack Notification (Success)
-        if: success()
+      - name: Post Deployment Notification (Slack - Optional)
+        if: always()
         uses: rtCamp/action-slack-notify@v2
         env:
-          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
-          SLACK_COLOR: 'good'
-          SLACK_TITLE: 'Deployment Successful'
-          SLACK_MESSAGE: 'Node application deployed successfully to Vercel.'
-
-      - name: Slack Notification (Failure)
-        if: failure()
-        uses: rtCamp/action-slack-notify@v2
-        env:
-          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
-          SLACK_COLOR: 'danger'
-          SLACK_TITLE: 'Deployment Failed'
-          SLACK_MESSAGE: 'Node application deployment failed. Check the logs for details.'
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_COLOR: ${{ job.status == 'success' && 'good' || 'danger' }}
+          SLACK_TITLE: "Deployment Status"
+          SLACK_MESSAGE: |
+            Deployment to Vercel finished with status: ${{ job.status }}
+            Commit: ${{ github.sha }}
+            Branch: ${{ github.ref }}
+            Workflow: ${{ github.workflow }}
+            Repository: ${{ github.repository }}
